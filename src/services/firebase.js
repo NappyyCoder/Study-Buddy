@@ -4,16 +4,37 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  // Replace with your Firebase config
-  apiKey: "YOUR_API_KEY",
-  authDomain: "your-app.firebaseapp.com",
-  projectId: "your-project-id",
-  storageBucket: "your-app.appspot.com",
-  messagingSenderId: "your-sender-id",
-  appId: "your-app-id"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
+
+// Initialize services with persistence
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+// Initialize Firestore with persistence
+const firestoreSettings = {
+  experimentalForceLongPolling: true,
+  cache: {
+    lru: { sizeBytes: 100 * 1024 * 1024 }, // 100MB cache size
+  }
+};
+
+await db.enablePersistence(firestoreSettings)
+  .catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+    } else if (err.code === 'unimplemented') {
+      console.warn('The current browser does not support persistence.');
+    }
+  });
+
+export default app;
